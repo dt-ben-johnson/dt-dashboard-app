@@ -1,0 +1,1530 @@
+content:
+  annotations: []
+  importedWithCode: false
+  layouts:
+    "0":
+      h: 3
+      w: 24
+      x: 0
+      "y": 0
+    "1":
+      h: 2
+      w: 24
+      x: 0
+      "y": 16
+    "6":
+      h: 2
+      w: 5
+      x: 0
+      "y": 3
+    "9":
+      h: 2
+      w: 24
+      x: 0
+      "y": 44
+    "10":
+      h: 4
+      w: 24
+      x: 0
+      "y": 63
+    "11":
+      h: 1
+      w: 24
+      x: 0
+      "y": 62
+    "13":
+      h: 4
+      w: 24
+      x: 0
+      "y": 40
+    "14":
+      h: 1
+      w: 24
+      x: 0
+      "y": 32
+    "16":
+      h: 4
+      w: 24
+      x: 0
+      "y": 46
+    "17":
+      h: 4
+      w: 24
+      x: 0
+      "y": 50
+    "18":
+      h: 4
+      w: 24
+      x: 0
+      "y": 54
+    "22":
+      h: 4
+      w: 24
+      x: 0
+      "y": 58
+    "27":
+      h: 3
+      w: 12
+      x: 0
+      "y": 33
+    "32":
+      h: 4
+      w: 9
+      x: 15
+      "y": 9
+    "33":
+      h: 4
+      w: 24
+      x: 0
+      "y": 36
+    "34":
+      h: 3
+      w: 7
+      x: 7
+      "y": 13
+    "35":
+      h: 4
+      w: 18
+      x: 0
+      "y": 28
+    "38":
+      h: 4
+      w: 6
+      x: 18
+      "y": 28
+    "40":
+      h: 2
+      w: 24
+      x: 0
+      "y": 67
+    "41":
+      h: 2
+      w: 5
+      x: 5
+      "y": 3
+    "42":
+      h: 2
+      w: 5
+      x: 10
+      "y": 3
+    "44":
+      h: 4
+      w: 5
+      x: 10
+      "y": 5
+    "45":
+      h: 4
+      w: 10
+      x: 0
+      "y": 5
+    "46":
+      h: 4
+      w: 5
+      x: 10
+      "y": 9
+    "47":
+      h: 6
+      w: 9
+      x: 15
+      "y": 3
+    "48":
+      h: 4
+      w: 10
+      x: 0
+      "y": 9
+    "49":
+      h: 3
+      w: 10
+      x: 14
+      "y": 13
+    "50":
+      h: 3
+      w: 7
+      x: 0
+      "y": 13
+    "51":
+      h: 10
+      w: 24
+      x: 0
+      "y": 18
+    "52":
+      h: 3
+      w: 12
+      x: 12
+      "y": 33
+  settings: {}
+  tiles:
+    "0":
+      content: "### Hosts health & performance \nGet broad visibility into key information, metrics and problems of hosts and infrastructure. For deeper analysis, please use the [Infrastructure & Operations](/ui/apps/dynatrace.infraops/smartscape/Hosts) app.\n\n"
+      type: markdown
+    "1":
+      content: |
+        ### Top used hosts
+        Surface hosts consuming the most resources
+      type: markdown
+    "6":
+      davis:
+        davisVisualization:
+          isAvailable: true
+        enabled: false
+      description: ""
+      query: |-
+        // Count monitored hosts, excluding monitoring candidates
+        smartscapeNodes HOST
+        | filterOut isMonitoringCandidate == true
+        | filter matchesValue($PrimaryTag,"ALL") or arraySize(array($Values)) == 0 or in($PrimaryTag:noquote, arrayConcat(array($Values), array("")))
+        | filter matchesValue($HostsUnderMaintenance, "Include") or not(id in [ timeseries mw = sum(dt.host.maintenance, default: 0, filter: maintenance.is_under_maintenance), by: { dt.smartscape.host }, from: toTimestamp($dt_timeframe_from), to: toTimestamp($dt_timeframe_to) | filter arrayMax(mw) > 0 | fields dt.smartscape.host ])
+        | summarize hosts = count()
+      querySettings:
+        defaultSamplingRatio: 10
+        defaultScanLimitGbytes: 500
+        enableSampling: false
+        maxResultMegaBytes: 100
+        maxResultRecords: 1000
+      title: Total hosts
+      type: data
+      visualization: singleValue
+      visualizationSettings:
+        singleValue:
+          isIconVisible: true
+          label: hosts
+          labelMode: none
+          prefixIcon: HostsIcon
+          recordField: hosts
+          trend:
+            isVisible: false
+        unitsOverrides:
+          - added: 1.75610772233e+12
+            baseUnit: count
+            cascade: null
+            decimals: 0
+            delimiter: false
+            displayUnit: null
+            identifier: hosts
+            suffix: ""
+            unitCategory: unspecified
+    "9":
+      content: |-
+        ### Resource hotspots
+        Identify the most resource-intensive hosts to address potential bottlenecks or optimize resource usage.
+      type: markdown
+    "10":
+      davis:
+        davisVisualization:
+          isAvailable: true
+        enabled: false
+      query: |-
+        // Scan limit is defined with the variable on top of the dashboard, changing it to -1 results in a unlimited scan size
+        // In case the limit has been hit, the graph will only show data up until that point
+        fetch logs, from: $dt_timeframe_from, samplingRatio: 100, scanLimitGBytes: toLong($ScanGBLimit)
+        | filter matchesValue($PrimaryTag,"ALL") or arraySize(array($Values)) == 0 or in($PrimaryTag:noquote, arrayConcat(array($Values), array("")))
+        | filter isNotNull(dt.smartscape.host)
+        | filter matchesValue($HostsUnderMaintenance, "Include") or not(dt.smartscape.host in [ timeseries mw = sum(dt.host.maintenance, default: 0, filter: maintenance.is_under_maintenance), by: { dt.smartscape.host }, from: toTimestamp($dt_timeframe_from), to: toTimestamp($dt_timeframe_to) | filter arrayMax(mw) > 0 | fields dt.smartscape.host ])
+        | makeTimeseries logs = count(), by:{loglevel}
+        | sort loglevel desc
+      querySettings:
+        defaultSamplingRatio: 10
+        defaultScanLimitGbytes: 500
+        enableSampling: false
+        maxResultMegaBytes: 100
+        maxResultRecords: 1000
+      title: Logs accross all hosts
+      type: data
+      visualization: barChart
+      visualizationSettings:
+        autoSelectVisualization: false
+        chartSettings:
+          fieldMapping:
+            leftAxisValues:
+              - logs
+            timestamp: timeframe
+          leftYAxisSettings:
+            label: dt.log.status_per_entity_count
+          seriesOverrides:
+            - override:
+                color:
+                  Default: 'var(--dt-colors-charts-loglevel-emergency-default, #ae132d)'
+              seriesId:
+                - ERROR
+            - override:
+                color:
+                  Default: 'var(--dt-colors-charts-categorical-color-01-default, #134fc9)'
+              seriesId:
+                - INFO
+            - override:
+                color:
+                  Default: 'var(--dt-colors-charts-categorical-color-02-default, #2c2f3f)'
+              seriesId:
+                - NONE
+            - override:
+                color:
+                  Default: 'var(--dt-colors-charts-categorical-color-06-default, #a9780f)'
+              seriesId:
+                - WARN
+          tooltip:
+            variant: shared
+          truncationMode: middle
+          xAxisLabel: timeframe
+          xAxisScaling: analyzedTimeframe
+        coloring:
+          colorRules:
+            - colorMode: color-palette
+              colorPalette: log-level
+              comparator: = *value*
+              field: DT.name
+              type: string
+              value: ""
+            - colorMode: custom-color
+              comparator: =
+              customColor:
+                Default: 'var(--dt-colors-charts-loglevel-emergency-default, #ae132d)'
+              field: DT.name
+              type: string
+              value: ERROR
+            - colorMode: custom-color
+              comparator: =
+              customColor:
+                Default: 'var(--dt-colors-charts-categorical-color-01-default, #134fc9)'
+              field: DT.name
+              type: string
+              value: INFO
+            - colorMode: custom-color
+              comparator: =
+              customColor:
+                Default: 'var(--dt-colors-charts-categorical-color-02-default, #2c2f3f)'
+              field: DT.name
+              type: string
+              value: NONE
+            - colorMode: custom-color
+              comparator: =
+              customColor:
+                Default: 'var(--dt-colors-charts-categorical-color-06-default, #a9780f)'
+              field: DT.name
+              type: string
+              value: WARN
+        dataMapping:
+          displayedFields:
+            - loglevel
+    "11":
+      content: |
+        ### Logs
+      type: markdown
+    "13":
+      davis:
+        davisVisualization:
+          isAvailable: true
+        enabled: false
+      description: This chart is affected by the "TopLimit" variable.
+      query: "// Retrieve top processes by average CPU usage, traverse to their host, and display both names.\ntimeseries cpuUsage = avg(dt.process.cpu.usage), by:{dt.smartscape.process},\n   filter: dt.smartscape.process in [\n     smartscapeNodes PROCESS\n     | traverse runs_on, HOST, direction: forward\n     | filter matchesValue($PrimaryTag,\"ALL\") \n         or arraySize(array($Values)) == 0 \n         or in($PrimaryTag:noquote, arrayConcat(array($Values), array(\"\")))\n     | filter matchesValue($HostsUnderMaintenance, \"Include\") or not(id in [ timeseries mw = sum(dt.host.maintenance, default: 0, filter: maintenance.is_under_maintenance), by: { dt.smartscape.host }, from: toTimestamp($dt_timeframe_from), to: toTimestamp($dt_timeframe_to) | filter arrayMax(mw) > 0 | fields dt.smartscape.host ])\n     | fields processId = dt.traverse.history[0][id]\n     | fields id = processId\n   ]\n| sort arrayAvg(cpuUsage) desc\n| limit toLong($TopLimit)\n| fieldsAdd processName = getNodeName(dt.smartscape.process)\n| lookup [\n    smartscapeNodes PROCESS\n    | traverse runs_on, HOST, direction: forward, fieldsKeep: name\n    | fieldsAdd processId = dt.traverse.history[0][id], processName = dt.traverse.history[0][name]\n    | fields processId, hostName = name, hostId = id\n  ],\n  sourceField: dt.smartscape.process,\n  lookupField: processId,\n  prefix: \"host.\"\n\n| fieldsAdd isUnderMaintenance = host.hostId in [ timeseries mw = sum(dt.host.maintenance, default: 0, filter: maintenance.is_under_maintenance), by: { dt.smartscape.host }, from: toTimestamp($dt_timeframe_from), to: toTimestamp($dt_timeframe_to) | filter arrayMax(mw) > 0 | fields dt.smartscape.host ]\n| fieldsAdd processName = if(isUnderMaintenance, concat(processName, \" (in maintenance)\"), else: processName)"
+      querySettings:
+        defaultSamplingRatio: 10
+        defaultScanLimitGbytes: 500
+        enableSampling: false
+        maxResultMegaBytes: 100
+        maxResultRecords: 1000
+      title: Top $TopLimit processes by highest CPU
+      type: data
+      visualization: lineChart
+      visualizationSettings:
+        chartSettings:
+          fieldMapping:
+            leftAxisValues:
+              - cpuUsage
+            timestamp: timeframe
+          gapPolicy: connect
+          leftYAxisSettings:
+            label: Process CPU usage
+            max:
+              mode: custom
+              value: 100
+          legend:
+            position: right
+          tooltip:
+            variant: shared
+          truncationMode: middle
+          xAxisLabel: timeframe
+          xAxisScaling: analyzedTimeframe
+        dataMapping:
+          displayedFields:
+            - processName
+        legend:
+          ratio: 40
+    "14":
+      content: '### Technologies and processes'
+      type: markdown
+    "16":
+      davis:
+        davisVisualization:
+          isAvailable: true
+        enabled: false
+      description: This chart is affected by the "TopLimit" variable.
+      query: "// Retrieve the top hosts by average CPU usage, sort them in descending order.\n// Uses Smartscape HOST nodes to resolve readable host names natively.\ntimeseries t_cpu = avg(dt.host.cpu.usage), by: { dt.smartscape.host },\n   filter: dt.smartscape.host in [\n     smartscapeNodes HOST\n     | filter matchesValue($PrimaryTag,\"ALL\") \n         or arraySize(array($Values)) == 0 \n         or in($PrimaryTag:noquote, arrayConcat(array($Values), array(\"\")))\n     | fields id\n   ]\n| filter matchesValue($HostsUnderMaintenance, \"Include\") or not(dt.smartscape.host in [ timeseries mw = sum(dt.host.maintenance, default: 0, filter: maintenance.is_under_maintenance), by: { dt.smartscape.host }, from: toTimestamp($dt_timeframe_from), to: toTimestamp($dt_timeframe_to) | filter arrayMax(mw) > 0 | fields dt.smartscape.host ])\n| sort arrayAvg(t_cpu) desc\n// limit number of results using variable\n| limit toLong($TopLimit)\n// Enrich with readable host name via Smartscape HOST node lookup\n| lookup [\n    smartscapeNodes HOST\n    | fields id, hostName = name\n  ],\n  sourceField: dt.smartscape.host,\n  lookupField: id,\n  fields: { hostName }\n\n| fieldsAdd isUnderMaintenance = dt.smartscape.host in [ timeseries mw = sum(dt.host.maintenance, default: 0, filter: maintenance.is_under_maintenance), by: { dt.smartscape.host }, from: toTimestamp($dt_timeframe_from), to: toTimestamp($dt_timeframe_to) | filter arrayMax(mw) > 0 | fields dt.smartscape.host ]\n| fieldsAdd hostName = if(isUnderMaintenance, concat(hostName, \" (in maintenance)\"), else: hostName)"
+      querySettings:
+        defaultSamplingRatio: 10
+        defaultScanLimitGbytes: 500
+        enableSampling: false
+        maxResultMegaBytes: 100
+        maxResultRecords: 1000
+      title: Top $TopLimit hosts by highest CPU load
+      type: data
+      visualization: lineChart
+      visualizationSettings:
+        chartSettings:
+          fieldMapping:
+            leftAxisValues:
+              - t_cpu
+            timestamp: timeframe
+          gapPolicy: connect
+          leftYAxisSettings:
+            label: CPU usage %
+            max:
+              mode: custom
+              value: 100
+          legend:
+            position: right
+          tooltip:
+            variant: shared
+          truncationMode: middle
+          xAxisLabel: timeframe
+          xAxisScaling: analyzedTimeframe
+        dataMapping:
+          displayedFields:
+            - hostName
+        legend:
+          ratio: 39
+    "17":
+      davis:
+        davisVisualization:
+          isAvailable: true
+        enabled: false
+      description: This chart is affected by the "TopLimit" variable.
+      query: "// Retrieve the top hosts by average memory usage, calculate the average memory for each host, sort them in descending order.\ntimeseries t_mem=avg(dt.host.memory.used), by:{dt.smartscape.host},\n   filter: dt.smartscape.host in [\n     smartscapeNodes HOST\n     | filter matchesValue($PrimaryTag,\"ALL\") \n         or arraySize(array($Values)) == 0 \n         or in($PrimaryTag:noquote, arrayConcat(array($Values), array(\"\")))\n     | fields id\n   ]\n| filter matchesValue($HostsUnderMaintenance, \"Include\") or not(dt.smartscape.host in [ timeseries mw = sum(dt.host.maintenance, default: 0, filter: maintenance.is_under_maintenance), by: { dt.smartscape.host }, from: toTimestamp($dt_timeframe_from), to: toTimestamp($dt_timeframe_to) | filter arrayMax(mw) > 0 | fields dt.smartscape.host ])\n| fieldsAdd avg_mem=arrayAvg(t_mem)\n| sort avg_mem desc\n// limit number of results using variable\n| limit toLong($TopLimit)\n| lookup [\n    smartscapeNodes HOST\n    | fields id, hostName = name\n  ],\n  sourceField: dt.smartscape.host,\n  lookupField: id,\n  fields: { hostName }\n\n| fieldsAdd isUnderMaintenance = dt.smartscape.host in [ timeseries mw = sum(dt.host.maintenance, default: 0, filter: maintenance.is_under_maintenance), by: { dt.smartscape.host }, from: toTimestamp($dt_timeframe_from), to: toTimestamp($dt_timeframe_to) | filter arrayMax(mw) > 0 | fields dt.smartscape.host ]\n| fieldsAdd hostName = if(isUnderMaintenance, concat(hostName, \" (in maintenance)\"), else: hostName)"
+      querySettings:
+        defaultSamplingRatio: 10
+        defaultScanLimitGbytes: 500
+        enableSampling: false
+        maxResultMegaBytes: 100
+        maxResultRecords: 1000
+      title: Top $TopLimit hosts by highest memory consumption
+      type: data
+      visualization: lineChart
+      visualizationSettings:
+        chartSettings:
+          fieldMapping:
+            leftAxisValues:
+              - t_mem
+            timestamp: timeframe
+          gapPolicy: connect
+          leftYAxisSettings:
+            label: Memory used
+          legend:
+            position: right
+          tooltip:
+            variant: shared
+          truncationMode: middle
+          xAxisLabel: timeframe
+          xAxisScaling: analyzedTimeframe
+        dataMapping:
+          displayedFields:
+            - hostName
+        legend:
+          ratio: 40
+        unitsOverrides:
+          - added: 1.729690610327e+12
+            baseUnit: byte
+            cascade: null
+            decimals: 0
+            delimiter: false
+            displayUnit: null
+            identifier: t_mem
+            suffix: ""
+            unitCategory: data
+    "18":
+      davis:
+        davisVisualization:
+          isAvailable: true
+        enabled: false
+      description: This chart is affected by the "TopLimit" variable.
+      query: "// Retrieve the top hosts by average disk usage, calculate the average disk usage for each host, sort them in descending order.\ntimeseries t_disk = min(dt.host.disk.free), by: { dt.smartscape.host },\n   filter: dt.smartscape.host in [\n     smartscapeNodes HOST\n     | filter matchesValue($PrimaryTag,\"ALL\") \n         or arraySize(array($Values)) == 0 \n         or in($PrimaryTag:noquote, arrayConcat(array($Values), array(\"\")))\n     | fields id\n   ]\n| filter matchesValue($HostsUnderMaintenance, \"Include\") or not(dt.smartscape.host in [ timeseries mw = sum(dt.host.maintenance, default: 0, filter: maintenance.is_under_maintenance), by: { dt.smartscape.host }, from: toTimestamp($dt_timeframe_from), to: toTimestamp($dt_timeframe_to) | filter arrayMax(mw) > 0 | fields dt.smartscape.host ])\n| fieldsAdd t_disk   = 100 - t_disk[]\n| fieldsAdd avg_disk = arrayAvg(t_disk)\n| sort avg_disk desc\n// limit number of results using variable\n| lookup [\n    smartscapeNodes HOST\n    | fields id, hostName = name\n  ],\n  sourceField: dt.smartscape.host,\n  lookupField: id,\n  fields: { hostName }\n| filterOut isNull(hostName)\n| fieldsAdd isUnderMaintenance = dt.smartscape.host in [ timeseries mw = sum(dt.host.maintenance, default: 0, filter: maintenance.is_under_maintenance), by: { dt.smartscape.host }, from: toTimestamp($dt_timeframe_from), to: toTimestamp($dt_timeframe_to) | filter arrayMax(mw) > 0 | fields dt.smartscape.host ]\n| fieldsAdd hostName = if(isUnderMaintenance, concat(hostName, \" (in maintenance)\"), else: hostName)\n| limit toLong($TopLimit)\n| fields t_disk, timeframe, interval, hostName, dt.smartscape.host\n"
+      querySettings:
+        defaultSamplingRatio: 10
+        defaultScanLimitGbytes: 500
+        enableSampling: false
+        maxResultMegaBytes: 100
+        maxResultRecords: 1000
+      title: Top $TopLimit hosts by highest disk usage
+      type: data
+      visualization: lineChart
+      visualizationSettings:
+        chartSettings:
+          fieldMapping:
+            leftAxisValues:
+              - t_disk
+            timestamp: timeframe
+          gapPolicy: connect
+          leftYAxisSettings:
+            label: Disk usage
+            min:
+              mode: data-min
+          legend:
+            position: right
+          tooltip:
+            variant: shared
+          truncationMode: middle
+          xAxisLabel: timeframe
+          xAxisScaling: analyzedTimeframe
+        dataMapping:
+          displayedFields:
+            - hostName
+        legend:
+          ratio: 40
+    "22":
+      davis:
+        davisVisualization:
+          isAvailable: true
+        enabled: false
+      description: This chart is affected by the "TopLimit" variable.
+      query: "// Retrieve the selected amount of hosts by highest total network traffic, sort them in descending order.\ntimeseries {\n  bytes_rx = avg(dt.host.net.nic.bytes_rx),\n  bytes_tx = avg(dt.host.net.nic.bytes_tx)\n}, by:{dt.smartscape.host},\n   filter: dt.smartscape.host in [\n     smartscapeNodes HOST\n     | filter matchesValue($PrimaryTag,\"ALL\") \n         or arraySize(array($Values)) == 0 \n         or in($PrimaryTag:noquote, arrayConcat(array($Values), array(\"\")))\n     | fields id\n   ]\n| filter matchesValue($HostsUnderMaintenance, \"Include\") or not(dt.smartscape.host in [ timeseries mw = sum(dt.host.maintenance, default: 0, filter: maintenance.is_under_maintenance), by: { dt.smartscape.host }, from: toTimestamp($dt_timeframe_from), to: toTimestamp($dt_timeframe_to) | filter arrayMax(mw) > 0 | fields dt.smartscape.host ])\n\n// sum of bytes received and transmitted\n| fieldsAdd Bps = bytes_rx[]+bytes_tx[]\n\n| sort arraySum(Bps) desc\n\n// limit number of results using variable\n| limit toLong($TopLimit)\n| lookup [\n    smartscapeNodes HOST\n    | fields id, hostName = name\n  ],\n  sourceField: dt.smartscape.host,\n  lookupField: id,\n  fields: { hostName }\n| fieldsAdd isUnderMaintenance = dt.smartscape.host in [ timeseries mw = sum(dt.host.maintenance, default: 0, filter: maintenance.is_under_maintenance), by: { dt.smartscape.host }, from: toTimestamp($dt_timeframe_from), to: toTimestamp($dt_timeframe_to) | filter arrayMax(mw) > 0 | fields dt.smartscape.host ]\n| fieldsAdd hostName = if(isUnderMaintenance, concat(hostName, \" (in maintenance)\"), else: hostName)\n| fieldsRemove bytes_tx, bytes_rx, isUnderMaintenance\n"
+      querySettings:
+        defaultSamplingRatio: 10
+        defaultScanLimitGbytes: 500
+        enableSampling: false
+        maxResultMegaBytes: 100
+        maxResultRecords: 1000
+      title: Top $TopLimit hosts by highest network traffic
+      type: data
+      visualization: lineChart
+      visualizationSettings:
+        chartSettings:
+          fieldMapping:
+            leftAxisValues:
+              - Bps
+            timestamp: timeframe
+          gapPolicy: connect
+          leftYAxisSettings:
+            label: NIC bytes received • NIC bytes sent on host
+          legend:
+            position: right
+          tooltip:
+            variant: shared
+          truncationMode: middle
+          xAxisLabel: timeframe
+          xAxisScaling: analyzedTimeframe
+        dataMapping:
+          displayedFields:
+            - hostName
+        legend:
+          ratio: 40
+        unitsOverrides:
+          - added: 1.770739206749e+12
+            baseUnit: Bps
+            cascade: null
+            decimals: null
+            delimiter: false
+            displayUnit: null
+            identifier: Bps
+            suffix: ""
+            unitCategory: datarate
+    "27":
+      davis:
+        davisVisualization:
+          isAvailable: true
+        enabled: false
+      query: "// Calculate the average CPU usage percentage per cloud type.\nsmartscapeNodes HOST\n\n| filter matchesValue($PrimaryTag,\"ALL\") or arraySize(array($Values)) == 0 or in($PrimaryTag:noquote, arrayConcat(array($Values), array(\"\")))\n| filter matchesValue($HostsUnderMaintenance, \"Include\") or not(id in [ timeseries mw = sum(dt.host.maintenance, default: 0, filter: maintenance.is_under_maintenance), by: { dt.smartscape.host }, from: toTimestamp($dt_timeframe_from), to: toTimestamp($dt_timeframe_to) | filter arrayMax(mw) > 0 | fields dt.smartscape.host ])\n// exclude hosts without cloud type\n| filterOut isNull(cloud.provider)\n\n// attach CPU consumption to hosts\n| lookup [\n  timeseries cpu = avg(dt.host.cpu.usage), by: { dt.smartscape.host }\n  | fieldsAdd lastCpu = arrayLast(cpu)\n], sourceField: id, lookupField: dt.smartscape.host, fields: { lastCpu }\n\n// summarize CPU usage per cloud type \n| summarize `Average CPU %` = avg(lastCpu), by: {`Cloud Type` = cloud.provider}\n\n| sort `Average CPU %` DESC\n\n"
+      querySettings:
+        defaultSamplingRatio: 10
+        defaultScanLimitGbytes: 500
+        enableSampling: false
+        maxResultMegaBytes: 100
+        maxResultRecords: 1000
+      title: Average CPU for cloud types
+      type: data
+      visualization: table
+      visualizationSettings:
+        table:
+          columnWidths:
+            '["Hypervisor Type"]': 200
+        unitsOverrides:
+          - added: 1.77038487086e+12
+            baseUnit: percent
+            cascade: null
+            decimals: null
+            delimiter: false
+            displayUnit: null
+            identifier: Average CPU %
+            suffix: ""
+            unitCategory: percentage
+    "32":
+      davis:
+        davisVisualization:
+          isAvailable: true
+        enabled: false
+      query: "// Retrieve the total number of NIC bytes received and sent over time,\n// using summed rollups for accuracy, filtered to Smartscape host entities\ntimeseries {\n  `NIC bytes received` = sum(dt.host.net.nic.bytes_rx),\n  `NIC bytes sent` = sum(dt.host.net.nic.bytes_tx)\n}, filter: dt.smartscape.host in [\n    smartscapeNodes HOST\n    | filter matchesValue($PrimaryTag,\"ALL\") \n        or arraySize(array($Values)) == 0 \n        or in($PrimaryTag:noquote, arrayConcat(array($Values), array(\"\")))\n    | filter matchesValue($HostsUnderMaintenance, \"Include\") or not(id in [ timeseries mw = sum(dt.host.maintenance, default: 0, filter: maintenance.is_under_maintenance), by: { dt.smartscape.host }, from: toTimestamp($dt_timeframe_from), to: toTimestamp($dt_timeframe_to) | filter arrayMax(mw) > 0 | fields dt.smartscape.host ])\n    | fields id\n  ]\n"
+      querySettings:
+        defaultSamplingRatio: 10
+        defaultScanLimitGbytes: 500
+        enableSampling: false
+        maxResultMegaBytes: 100
+        maxResultRecords: 1000
+      title: 'Hosts network traffic '
+      type: data
+      visualization: lineChart
+      visualizationSettings:
+        chartSettings:
+          fieldMapping:
+            leftAxisValues:
+              - NIC bytes received
+              - NIC bytes sent
+            timestamp: timeframe
+          gapPolicy: connect
+          leftYAxisSettings:
+            label: NIC bytes received • NIC bytes sent on host
+          tooltip:
+            variant: shared
+          xAxisLabel: timeframe
+          xAxisScaling: analyzedTimeframe
+        unitsOverrides: []
+    "33":
+      davis:
+        davisVisualization:
+          isAvailable: true
+        enabled: false
+      query: "// Collect all CPU and Memory Usage across all processes on hosts and show combined average\ntimeseries {\n  `CPU usage` = avg(dt.process.cpu.usage),\n  `Memory usage` = avg(dt.process.memory.usage)\n}, by: { dt.smartscape.host },\n   filter: dt.smartscape.host in [\n     smartscapeNodes HOST\n     | filter matchesValue($PrimaryTag,\"ALL\") \n         or arraySize(array($Values)) == 0 \n         or in($PrimaryTag:noquote, arrayConcat(array($Values), array(\"\")))\n     | fields id\n   ]\n| filter matchesValue($HostsUnderMaintenance, \"Include\") or not(dt.smartscape.host in [ timeseries mw = sum(dt.host.maintenance, default: 0, filter: maintenance.is_under_maintenance), by: { dt.smartscape.host }, from: toTimestamp($dt_timeframe_from), to: toTimestamp($dt_timeframe_to) | filter arrayMax(mw) > 0 | fields dt.smartscape.host ])\n| summarize {\n  `CPU usage` = avg(`CPU usage`[]),\n  `Memory usage` = avg(`Memory usage`[])\n}, by: { timeframe, interval }\n"
+      querySettings:
+        defaultSamplingRatio: 10
+        defaultScanLimitGbytes: 500
+        enableSampling: false
+        maxResultMegaBytes: 100
+        maxResultRecords: 1000
+      timeframe:
+        tileTimeframe:
+          from: now()-2h
+          to: now()
+        tileTimeframeEnabled: false
+      title: Average CPU and memory usage across all processes
+      type: data
+      visualization: lineChart
+      visualizationSettings:
+        chartSettings:
+          fieldMapping:
+            leftAxisValues:
+              - Memory usage
+              - CPU usage
+            timestamp: timeframe
+          gapPolicy: connect
+          leftYAxisSettings:
+            label: Process CPU usage • Process memory usage
+            max:
+              mode: custom
+              value: 100
+          legend:
+            position: right
+          tooltip:
+            variant: shared
+          xAxisLabel: timeframe
+          xAxisScaling: analyzedTimeframe
+    "34":
+      davis:
+        davisVisualization:
+          isAvailable: true
+        enabled: false
+      query: |-
+        // Classify hosts by their monitoring mode and count them, sorted in descending order.
+        smartscapeNodes HOST
+        | filter matchesValue($PrimaryTag,"ALL") or arraySize(array($Values)) == 0 or in($PrimaryTag:noquote, arrayConcat(array($Values), array("")))
+        | filter matchesValue($HostsUnderMaintenance, "Include") or not(id in [ timeseries mw = sum(dt.host.maintenance, default: 0, filter: maintenance.is_under_maintenance), by: { dt.smartscape.host }, from: toTimestamp($dt_timeframe_from), to: toTimestamp($dt_timeframe_to) | filter arrayMax(mw) > 0 | fields dt.smartscape.host ])
+        | fields id
+        // Since monitoring mode does not exist anymore directly on the Host entity
+        //   Connect the values through a ONEAGENT lookup where it is stored now
+        | fieldsAdd monitoringMode = lookup([
+         smartscapeNodes ONEAGENT
+         | fieldsAdd monitoringMode = coalesce ( if (dt.smartscape_source.sender == "dynatrace_codemodule", "APP_ONLY"),
+         if(isNotNull(dt.agent.monitoring_mode), dt.agent.monitoring_mode), "UNKNOWN")
+        ], sourceField:id, lookupField:references[monitors.host][0])[monitoringMode]
+
+        | summarize count = count(), by:{ monitoringMode }
+        | sort count DESC
+      querySettings:
+        defaultSamplingRatio: 10
+        defaultScanLimitGbytes: 500
+        enableSampling: false
+        maxResultMegaBytes: 100
+        maxResultRecords: 1000
+      title: Hosts monitoring mode
+      type: data
+      visualization: pieChart
+      visualizationSettings:
+        autoSelectVisualization: false
+        chartSettings:
+          categoricalBarChartSettings:
+            categoryAxis:
+              - count
+              - monitoringMode
+          circleChartSettings:
+            groupingThresholdType: relative
+            valueType: relative
+          legend:
+            position: right
+          truncationMode: middle
+        coloring:
+          colorRules:
+            - colorMode: color-palette
+              colorPalette: categorical
+              comparator: = *value*
+              field: DT.name
+              type: string
+              value: ""
+            - colorMode: custom-color
+              comparator: =
+              customColor: '#2F6863'
+              field: DT.name
+              type: string
+              value: FULL_STACK • 1868
+            - colorMode: custom-color
+              comparator: =
+              customColor:
+                Default: 'var(--dt-colors-charts-categorical-color-01-default, #134fc9)'
+              field: DT.name
+              type: string
+              value: APP_ONLY • 2
+            - colorMode: custom-color
+              comparator: =
+              customColor:
+                Default: 'var(--dt-colors-charts-categorical-color-04-default, #d85a9f)'
+              field: DT.name
+              type: string
+              value: DISCOVERY • 1
+            - colorMode: custom-color
+              comparator: =
+              customColor:
+                Default: 'var(--dt-colors-charts-categorical-color-05-default, #84859a)'
+              field: DT.name
+              type: string
+              value: MONITORING_CANDIDATE • 247
+        legend:
+          ratio: 69
+    "35":
+      davis:
+        davisVisualization:
+          isAvailable: true
+        enabled: false
+      description: Click on a specific id field in the table below and select "Open with..." to view host details in the Infrastructure & Operations app.
+      query: |
+        // Fetch active hosts affected by disk space, high CPU, or high memory events in the last 6 hours and 10 minutes
+
+        // Step 1: Load all HOST nodes from Smartscape
+        smartscapeNodes HOST
+        | filter matchesValue($PrimaryTag,"ALL") or arraySize(array($Values)) == 0 or in($PrimaryTag:noquote, arrayConcat(array($Values), array("")))
+        | fieldsAdd isUnderMaintenance = id in [ timeseries mw = sum(dt.host.maintenance, default: 0, filter: maintenance.is_under_maintenance), by: { dt.smartscape.host }, from: toTimestamp($dt_timeframe_from), to: toTimestamp($dt_timeframe_to) | filter arrayMax(mw) > 0 | fields dt.smartscape.host ]
+        | filter matchesValue($HostsUnderMaintenance, "Include") or not(isUnderMaintenance)
+        | fieldsAdd `Maintenance window` = if(isUnderMaintenance, "Active", else: "-")
+        | fields dt.smartscape.host = id, name, `Maintenance window`
+
+        // Step 2: Lookup event counts per host from the events bucket
+        | lookup
+        [
+          fetch events, from: toTimestamp($dt_timeframe_from), to: toTimestamp($dt_timeframe_to), scanLimitGBytes: -1
+          | filter in(dt.system.bucket, { "default_davis_events", "default_davis_custom_events", "default_k8s_ops_events" })
+          | filter event.kind == "DAVIS_EVENT"
+          | filter contains(toString(smartscape.affected_entity.ids), "HOST")
+          | filter matchesPhrase(event.name, "CPU") or matchesPhrase(event.name, "Memory")
+              or matchesPhrase(event.name, "Disk") or matchesPhrase(event.group_label, "Disk")
+          | fieldsAdd eventType = if(matchesPhrase(event.name, "Disk") or matchesPhrase(event.group_label, "Disk"), "Disk", else:
+              if(matchesPhrase(event.name, "Cpu"), "CPU", else: "Memory"))
+          | sort timestamp
+          // Deduplicate per event.id and keep relevant fields
+          | summarize {
+              event.start              = takeLast(event.start),
+              event.end                = takeLast(event.end),
+              event.status             = takeLast(event.status),
+              dt.davis.is_duplicate    = takeLast(dt.davis.is_duplicate),
+              affected_entities        = takeLast(smartscape.affected_entity.ids),
+              related_entities         = takeLast(smartscape.related_entity.ids),
+              eventType                = takeLast(eventType)
+            }, by: { event.id }
+          | filter isNull(dt.davis.is_duplicate) OR not(dt.davis.is_duplicate)
+          | filter event.status == "ACTIVE"
+          | filter isNull(event.end) OR event.end >= toTimestamp($dt_timeframe_from)
+          | filter event.start <= toTimestamp($dt_timeframe_to)
+          | expand host = affected_entities
+          | filter contains(toString(host), "HOST-")
+          // Summarize counts per event type for each host
+          | summarize
+              CPU_events    = sum(if(eventType == "CPU",    1, else: 0)),
+              Memory_events = sum(if(eventType == "Memory", 1, else: 0)),
+              Disk_events   = sum(if(eventType == "Disk",   1, else: 0))
+            , by: { host }
+        ], sourceField: dt.smartscape.host, lookupField: host, fields: { CPU_events, Memory_events, Disk_events }
+        | filter (not(isNull(CPU_events)) or not(isNull(Memory_events)) or not(isNull(Disk_events)))
+
+        // Step 3: Lookup latest average CPU, memory, and disk usage metrics per host
+        | lookup
+        [
+          timeseries {
+            CPU    = avg(dt.host.cpu.usage),
+            Memory = avg(dt.host.memory.usage),
+            Disk   = min(dt.host.disk.free)
+          }, by: { dt.smartscape.host }, union: true
+          | fields dt.smartscape.host,
+                   CPU    = arrayLast(CPU),
+                   Memory = arrayLast(Memory),
+                   Disk   = 100 - arrayLast(Disk)
+        ], sourceField: dt.smartscape.host, lookupField: dt.smartscape.host, fields: { CPU, Memory, Disk }
+
+        // Step 4: Final output
+        | fields
+          Name              = name,
+          id         = toString(dt.smartscape.host),
+          CPU,
+          `CPU events`      = if(isNull(CPU_events)    or CPU_events    == 0, "-", else: toLong(CPU_events)),
+          Memory,
+          `Memory events`   = if(isNull(Memory_events) or Memory_events == 0, "-", else: toLong(Memory_events)),
+          Disk,
+          `Disk events`     = if(isNull(Disk_events)   or Disk_events   == 0, "-", else: toLong(Disk_events)),
+          `Maintenance window`
+      querySettings:
+        defaultSamplingRatio: 10
+        defaultScanLimitGbytes: 500
+        enableSampling: false
+        maxResultMegaBytes: 100
+        maxResultRecords: 1000
+      title: Hosts reaching resource saturation (CPU, memory or disk)
+      type: data
+      visualization: table
+      visualizationSettings:
+        table:
+          columnWidths:
+            '["CPU events"]': 109
+            '["CPU_warning"]': 134
+            '["Disk_warning"]': 135
+            '["Mem_warning"]': 140
+            '["Name"]': 326
+            '["avg_cpu"]': 109
+            '["avg_disk"]': 105
+            '["avg_mem"]': 112
+            '["host.entity.name"]': 222.00000000000003
+            '["host.id"]': 185
+          hiddenColumns:
+            - - dt.entity.host
+            - - id
+          hideColumnsForLargeResults: false
+          sortBy:
+            - columnId: '["Disk"]'
+              direction: descending
+    "38":
+      davis:
+        davisVisualization:
+          isAvailable: true
+        enabled: false
+      query: |-
+        // Aggregate distinct CPU / Memory / Disk events
+        fetch events, from: toTimestamp($dt_timeframe_from), to: toTimestamp($dt_timeframe_to)-2m, scanLimitGBytes:-1
+        | filter in(dt.system.bucket, { "default_davis_events", "default_davis_custom_events", "default_k8s_ops_events"})
+        | filter event.kind == "DAVIS_EVENT"
+        | filter contains(toString(smartscape.affected_entity.ids), "HOST")
+        | filter matchesValue($PrimaryTag,"ALL") or arraySize(array($Values)) == 0 or in($PrimaryTag:noquote, arrayConcat(array($Values), array("")))
+        | filter matchesPhrase(event.name, "CPU") or matchesPhrase(event.name, "Memory") or matchesPhrase(event.name, "Disk") or matchesPhrase(event.group_label, "Disk")
+        // assign eventType BEFORE dedupe
+        | fieldsAdd eventType = if(matchesPhrase(event.name, "Disk") or matchesPhrase(event.group_label, "Disk"), "Disk", else:
+            if(matchesPhrase(event.name, "Cpu"), "CPU", else: "Memory"))
+        | sort timestamp
+        // deduplicate per event.id and keep eventType (and other fields you need)
+        | summarize {
+            event.start = takeLast(event.start),
+            event.end = takeLast(event.end),
+            event.name = takeLast(event.name),
+            event.category = takeLast(event.category),
+            event.status = takeLast(event.status),
+            event.description = takeLast(event.description),
+            eventType = takeLast(eventType),
+            dt.davis.is_duplicate = takeLast(dt.davis.is_duplicate),
+            affected_entities = takeLast(smartscape.affected_entity.ids)
+          }, by:{event.id}
+        | filter isNull(dt.davis.is_duplicate) OR not(dt.davis.is_duplicate)
+        | filter event.status == "ACTIVE"
+        | filter isNull(event.end) OR event.end >= toTimestamp($dt_timeframe_from)
+        | filter event.start <= toTimestamp($dt_timeframe_to)
+        // filter events by maintenance window: exclude events only affecting MW hosts
+        | expand host = affected_entities
+        | filter startsWith(toString(host), "HOST-")
+        | filter matchesValue($HostsUnderMaintenance, "Include") or not(host in [ timeseries mw = sum(dt.host.maintenance, default: 0, filter: maintenance.is_under_maintenance), by: { dt.smartscape.host }, from: toTimestamp($dt_timeframe_from), to: toTimestamp($dt_timeframe_to) | filter arrayMax(mw) > 0 | fields dt.smartscape.host ])
+        // now aggregate by eventType (use countDistinct since we expanded per host)
+        | summarize event_count = countDistinct(event.id), by:{eventType}
+      querySettings:
+        defaultSamplingRatio: 10
+        defaultScanLimitGbytes: 500
+        enableSampling: false
+        maxResultMegaBytes: 100
+        maxResultRecords: 1000
+      title: Events distribution by type
+      type: data
+      visualization: pieChart
+      visualizationSettings:
+        autoSelectVisualization: false
+        chartSettings:
+          legend:
+            position: right
+          truncationMode: middle
+        legend:
+          ratio: 46
+    "40":
+      content: |-
+        **Data is missing? Please follow the links below to complete your data onboarding:**
+
+        * [Ingest data](https://docs.dynatrace.com/docs/ingest-from)
+        * [Infrastructure observability](https://docs.dynatrace.com/docs/observe/infrastructure-observability/infrastructure-and-operations/hosts)
+      type: markdown
+    "41":
+      davis:
+        davisVisualization:
+          isAvailable: true
+        enabled: false
+      description: Counts hosts with problems that were reported inside of the choosen timeframe.
+      query: "// Count hosts with active problems\nfetch events\n| filter matchesValue($PrimaryTag,\"ALL\") or arraySize(array($Values)) == 0 or in($PrimaryTag:noquote, arrayConcat(array($Values), array(\"\")))\n| filter event.kind == \"DAVIS_EVENT\"\n| filter timestamp >= toTimestamp($dt_timeframe_from)\n| filter timestamp <= toTimestamp($dt_timeframe_to)\n\n// filter in events related to host entity\n| filter contains(toString(smartscape.affected_entity.ids), \"HOST\") \n      or contains(toString(smartscape.related_entity.ids), \"HOST\")\n\n| summarize {\n  event.start = takeLast(event.start),\n  event.end = takeLast(event.end),\n  dt.davis.is_duplicate = takeLast(dt.davis.is_duplicate),\n  affected_entities = takeLast(smartscape.affected_entity.ids),\n  event.status = takeLast(event.status),\n  related_entities = takeLast(smartscape.related_entity.ids)\n},\nby: { event.id }\n\n// filter out duplicate events, filter in only active events\n| filter isNull(dt.davis.is_duplicate) or not(dt.davis.is_duplicate)\n| filter event.status == \"ACTIVE\"\n\n| filter isNull(event.end) or event.end >= toTimestamp($dt_timeframe_from)\n| filter event.start <= toTimestamp($dt_timeframe_to)\n\n// expand command will split <event, entity[]> into <event, entity>   \n// note: event may be affecting not just host entities, but disk, nic etc.\n| expand affectedEntity = affected_entities\n| expand related_entity = related_entities\n\n// filter out non-host entities\n| filter startsWith(toString(affectedEntity), \"HOST-\") or startsWith(toString(related_entity), \"HOST-\")\n| fieldsAdd host = if(startsWith(toString(affectedEntity), \"HOST-\"), affectedEntity, else: related_entity)\n| filter matchesValue($HostsUnderMaintenance, \"Include\") or not(host in [ timeseries mw = sum(dt.host.maintenance, default: 0, filter: maintenance.is_under_maintenance), by: { dt.smartscape.host }, from: toTimestamp($dt_timeframe_from), to: toTimestamp($dt_timeframe_to) | filter arrayMax(mw) > 0 | fields dt.smartscape.host ])\n\n// arraySize of distinct events will count problems per host\n| summarize problems = arraySize(collectDistinct(event.id)),\n  by: { host }\n\n// hosts without problems are not counted\n| filter problems > 0\n\n// countDistinct will count records by skipping duplicates from field host\n| summarize hosts = countDistinct(host)\n"
+      querySettings:
+        defaultSamplingRatio: 10
+        defaultScanLimitGbytes: 500
+        enableSampling: false
+        maxResultMegaBytes: 100
+        maxResultRecords: 1000
+      title: Hosts with problems
+      type: data
+      visualization: singleValue
+      visualizationSettings:
+        singleValue:
+          colorThresholdTarget: background
+          isIconVisible: true
+          label: hosts
+          labelMode: none
+          prefixIcon: HostsIcon
+          recordField: hosts
+          trend:
+            isVisible: false
+        unitsOverrides:
+          - added: 1.756111976142e+12
+            baseUnit: count
+            cascade: null
+            decimals: 0
+            delimiter: false
+            displayUnit: null
+            identifier: hosts
+            suffix: ""
+            unitCategory: unspecified
+    "42":
+      davis:
+        davisVisualization:
+          isAvailable: true
+        enabled: false
+      description: Average availability for all hosts. Only active hosts are counted in but the average of all is displayed. Availability is reported every couple of minutes, thus timeframe should include at least 5 minutes period.
+      query: |
+        // Calculate average host availability; maintenance windows count as uptime so planned maintenance does not lower availability
+        smartscapeNodes HOST
+        | filter matchesValue($PrimaryTag,"ALL") or arraySize(array($Values)) == 0 or in($PrimaryTag:noquote, arrayConcat(array($Values), array("")))
+        | filter matchesValue($HostsUnderMaintenance, "Include") or not(id in [ timeseries mw = sum(dt.host.maintenance, default: 0, filter: maintenance.is_under_maintenance), by: { dt.smartscape.host }, from: toTimestamp($dt_timeframe_from), to: toTimestamp($dt_timeframe_to) | filter arrayMax(mw) > 0 | fields dt.smartscape.host ])
+        | lookup [
+          timeseries {
+            m1 = sum(dt.host.availability, rollup: sum, default: -1.0, filter: availability.state == "up"),
+            mw = sum(dt.host.maintenance, default: 0, filter: maintenance.is_under_maintenance)
+          }, by: { dt.smartscape.host }, from: toTimestamp($dt_timeframe_from), to: toTimestamp($dt_timeframe_to)-2m, union: true
+          | fieldsAdd m1 = arraySlice(m1, from: 0, to: arraySize(m1) - 1)
+          | fieldsAdd mw = arraySlice(mw, from: 0, to: arraySize(mw) - 1)
+          | fieldsAdd intervalToMinutes = toLong(interval) / 60000000000
+          | fieldsAdd effectiveUptime = if(mw[] > 0.0, toDouble(intervalToMinutes), else: if(m1[] > 0.0, if(m1[] > intervalToMinutes, toDouble(intervalToMinutes), else: m1[]), else: 0.0))
+          | fieldsAdd hasDataOutsideMw = if(mw[] == 0.0 and m1[] >= 0.0, 1.0, else: 0.0)
+          | fieldsAdd hasDataOutsideMw = arraySum(hasDataOutsideMw) > 0
+          | fieldsAdd availability = if(hasDataOutsideMw, round((arraySum(effectiveUptime) / arraySize(effectiveUptime)) * 100 / intervalToMinutes, decimals: 2))
+          | fields dt.smartscape.host, availability
+        ], sourceField: id, lookupField: dt.smartscape.host, fields: { availability }
+        | fields id, availability
+        | summarize `avg(availability)` = coalesce(avg(availability), 0)
+      querySettings:
+        defaultSamplingRatio: 10
+        defaultScanLimitGbytes: 500
+        enableSampling: false
+        maxResultMegaBytes: 100
+        maxResultRecords: 1000
+      title: Hosts availability
+      type: data
+      visualization: singleValue
+      visualizationSettings:
+        singleValue:
+          colorThresholdTarget: background
+          label: avg(availability)
+          labelMode: none
+          prefixIcon: HostsIcon
+          recordField: avg(availability)
+          trend:
+            isVisible: false
+        unitsOverrides:
+          - added: 1.701249707791e+12
+            baseUnit: percent
+            cascade: null
+            decimals: 2
+            delimiter: false
+            displayUnit: null
+            identifier: avg(availability)
+            suffix: ""
+            unitCategory: percentage
+    "44":
+      davis:
+        davisVisualization:
+          isAvailable: true
+        enabled: false
+      query: |-
+        // Count the number of hosts by their state, excluding null states, and sort the results in descending orde
+        smartscapeNodes HOST
+        | filter matchesValue($PrimaryTag,"ALL") or arraySize(array($Values)) == 0 or in($PrimaryTag:noquote, arrayConcat(array($Values), array("")))
+        | filter matchesValue($HostsUnderMaintenance, "Include") or not(id in [ timeseries mw = sum(dt.host.maintenance, default: 0, filter: maintenance.is_under_maintenance), by: { dt.smartscape.host }, from: toTimestamp($dt_timeframe_from), to: toTimestamp($dt_timeframe_to) | filter arrayMax(mw) > 0 | fields dt.smartscape.host ])
+        | fieldsAdd derived_state = if(
+            getEnd(lifetime) >= now() - 10m, "RUNNING",
+            else: "INACTIVE"
+          )
+        | fieldsRemove name, id
+        | filterOut isNull(derived_state)
+        | summarize count = count(), by: { derived_state }
+        | fieldsRename { state = derived_state }
+        | sort count DESC
+      querySettings:
+        defaultSamplingRatio: 10
+        defaultScanLimitGbytes: 500
+        enableSampling: false
+        maxResultMegaBytes: 100
+        maxResultRecords: 1000
+      title: 'Hosts states '
+      type: data
+      visualization: pieChart
+      visualizationSettings:
+        autoSelectVisualization: false
+        chartSettings:
+          categoricalBarChartSettings:
+            categoryAxis:
+              - state
+              - count
+            categoryAxisLabel: state,count
+          circleChartSettings:
+            groupingThresholdType: relative
+            valueType: relative
+          legend:
+            position: right
+          truncationMode: middle
+        coloring:
+          colorRules:
+            - colorMode: color-palette
+              colorPalette: categorical
+              comparator: = *value*
+              field: DT.name
+              type: string
+              value: ""
+            - colorMode: custom-color
+              comparator: =
+              customColor: '#2F6863'
+              field: DT.name
+              type: string
+              value: RUNNING • 1739
+            - colorMode: custom-color
+              comparator: =
+              customColor:
+                Default: 'var(--dt-colors-charts-categorical-color-05-default, #84859a)'
+              field: DT.name
+              type: string
+              value: MONITORING_DISABLED • 65
+            - colorMode: custom-color
+              comparator: =
+              customColor: '#C4233B'
+              field: DT.name
+              type: string
+              value: OFFLINE • 58
+            - colorMode: custom-color
+              comparator: =
+              customColor: '#C4233B'
+              field: DT.name
+              type: string
+              value: SHUTDOWN • 42
+        legend:
+          ratio: 51
+        unitsOverrides: []
+    "45":
+      davis:
+        davisVisualization:
+          isAvailable: true
+        enabled: false
+      description: |-
+        Click on honeycomb to see the name of the host tooltip and click in "Open with..." to view host details in the Infrastructure & Operations app.
+        This chart is affected but the "TopLimit" variable.
+      query: "// Show the top 5 Hosts by problems\nfetch events\n  | filter matchesValue($PrimaryTag,\"ALL\") or arraySize(array($Values)) == 0 or in($PrimaryTag:noquote, arrayConcat(array($Values), array(\"\")))\n  | filter event.kind == \"DAVIS_EVENT\"\n  | filter timestamp >= toTimestamp($dt_timeframe_from)\n  | filter timestamp <= toTimestamp($dt_timeframe_to)\n\n  | filter contains(toString(smartscape.affected_entity.ids), \"HOST\") \n        or contains(toString(smartscape.related_entity.ids), \"HOST\")\n        \n  | summarize {\n    event.start = takeLast(event.start),\n    event.end = takeLast(event.end),\n    dt.davis.is_duplicate = takeLast(dt.davis.is_duplicate),\n    affected_entities = takeLast(smartscape.affected_entity.ids),\n    event.status = takeLast(event.status),\n    related_entities = takeLast(smartscape.related_entity.ids)\n  },\n  by: { event.id }\n\n| filter isNull(dt.davis.is_duplicate) or not(dt.davis.is_duplicate)\n| filter event.status == \"ACTIVE\"\n\n| filter isNull(event.end) or event.end >= toTimestamp($dt_timeframe_from)\n| filter event.start <= toTimestamp($dt_timeframe_to)\n\n| expand affectedEntity = affected_entities\n| expand related_entity = related_entities\n\n| filter startsWith(toString(affectedEntity), \"HOST-\") or startsWith(toString(related_entity), \"HOST-\")\n| fieldsAdd host = if(startsWith(toString(affectedEntity), \"HOST-\"), affectedEntity, else: related_entity)\n| filter matchesValue($HostsUnderMaintenance, \"Include\") or not(host in [ timeseries mw = sum(dt.host.maintenance, default: 0, filter: maintenance.is_under_maintenance), by: { dt.smartscape.host }, from: toTimestamp($dt_timeframe_from), to: toTimestamp($dt_timeframe_to) | filter arrayMax(mw) > 0 | fields dt.smartscape.host ])\n\n| summarize problems = arraySize(collectDistinct(event.id)),\n  by: { host }\n\n| filter problems > 0\n\n| fieldsAdd smartscapeHost = toSmartscapeId(host)\n| lookup [\n    smartscapeNodes HOST\n    | fields id, name\n  ],\n  sourceField: smartscapeHost,\n  lookupField: id,\n  prefix: \"ss.\"\n\n| fields \n   host,\n   id = toString(ss.id),\n  `Smartscape Name` = ss.name,\n   Problems = problems\n| sort Problems desc\n\n| limit toLong($TopLimit)\n"
+      querySettings:
+        defaultSamplingRatio: 10
+        defaultScanLimitGbytes: 500
+        enableSampling: false
+        maxResultMegaBytes: 100
+        maxResultRecords: 1000
+      title: Top $TopLimit hosts by problems
+      type: data
+      visualization: honeycomb
+      visualizationSettings:
+        coloring:
+          colorRules:
+            - colorMode: color-palette
+              colorPalette: red
+              comparator: = *value*
+              field: Problems
+              type: string
+              value: ""
+        honeycomb:
+          dataMappings:
+            value: Problems
+          displayedFields:
+            - Smartscape Name
+          labels:
+            showLabels: true
+          legend:
+            position: right
+          truncationMode: middle
+    "46":
+      davis:
+        davisVisualization:
+          isAvailable: true
+        enabled: false
+      description: Calculated as sum of inbound and outbound traffic for all hosts within a dashboard timeframe.
+      query: "// Calculate the total network traffic volume (bytes received and transmitted)\n// across hosts filtered by PrimaryTag using timeseries data.\ntimeseries {\n  bytes_rx = avg(dt.host.net.nic.bytes_rx), // bytes/s\n  bytes_tx = avg(dt.host.net.nic.bytes_tx)\n}, by: { dt.smartscape.host },\n   filter: dt.smartscape.host in [\n     smartscapeNodes HOST\n     | filter matchesValue($PrimaryTag,\"ALL\") \n         or arraySize(array($Values)) == 0 \n         or in($PrimaryTag:noquote, arrayConcat(array($Values), array(\"\")))\n     | fields id\n   ]\n| filter matchesValue($HostsUnderMaintenance, \"Include\") or not(dt.smartscape.host in [ timeseries mw = sum(dt.host.maintenance, default: 0, filter: maintenance.is_under_maintenance), by: { dt.smartscape.host }, from: toTimestamp($dt_timeframe_from), to: toTimestamp($dt_timeframe_to) | filter arrayMax(mw) > 0 | fields dt.smartscape.host ])\n// Convert the `interval` field from nanoseconds to seconds for accurate time-based calculation\n| fieldsAdd intervalToSeconds = toLong(interval) / power(10, 9)\n| fieldsAdd trafficVolume = (arraySum(bytes_rx) + arraySum(bytes_tx)) * intervalToSeconds\n| summarize sum(trafficVolume)\n"
+      querySettings:
+        defaultSamplingRatio: 10
+        defaultScanLimitGbytes: 500
+        enableSampling: false
+        maxResultMegaBytes: 100
+        maxResultRecords: 1000
+      title: Total traffic
+      type: data
+      visualization: singleValue
+      visualizationSettings:
+        singleValue:
+          label: traffic_gb
+          labelMode: none
+          prefixIcon: HostsIcon
+          recordField: sum(trafficVolume)
+          trend:
+            isVisible: false
+        unitsOverrides:
+          - added: 1.70124974519e+12
+            baseUnit: byte
+            cascade: null
+            decimals: 2
+            delimiter: false
+            displayUnit: null
+            identifier: sum(trafficVolume)
+            suffix: ""
+            unitCategory: data
+    "47":
+      davis:
+        davisVisualization:
+          isAvailable: true
+        enabled: false
+      description: |-
+        Click on honeycomb to see the name of the host tooltip and click in "Open with..." to view host details in the Infrastructure & Operations app.
+        This chart is affected by the "TopLimit" variable.
+      query: |
+        // Rank hosts by lowest availability; maintenance windows count as uptime so planned maintenance does not lower availability
+        smartscapeNodes HOST
+
+        // Only keep hosts that are currently active
+        | filter matchesValue($PrimaryTag,"ALL") or arraySize(array($Values)) == 0 or in($PrimaryTag:noquote, arrayConcat(array($Values), array("")))
+        | filter matchesValue($HostsUnderMaintenance, "Include") or not(id in [ timeseries mw = sum(dt.host.maintenance, default: 0, filter: maintenance.is_under_maintenance), by: { dt.smartscape.host }, from: toTimestamp($dt_timeframe_from), to: toTimestamp($dt_timeframe_to) | filter arrayMax(mw) > 0 | fields dt.smartscape.host ])
+        | filter isNull(lifetime.end) or lifetime.end >= now()
+
+        | lookup [
+          timeseries {
+            m1 = sum(dt.host.availability, rollup: sum, default: -1.0, filter: availability.state == "up"),
+            mw = sum(dt.host.maintenance, default: 0, filter: maintenance.is_under_maintenance)
+          }, by: { dt.smartscape.host }, from: toTimestamp($dt_timeframe_from), to: toTimestamp($dt_timeframe_to) - 2m, union: true
+          | fieldsAdd m1 = arraySlice(m1, from: 0, to: arraySize(m1) - 1)
+          | fieldsAdd mw = arraySlice(mw, from: 0, to: arraySize(mw) - 1)
+          | fieldsAdd intervalToMinutes = toLong(interval) / 60000000000
+          | fieldsAdd effectiveUptime = if(mw[] > 0.0, toDouble(intervalToMinutes), else: if(m1[] > 0.0, if(m1[] > intervalToMinutes, toDouble(intervalToMinutes), else: m1[]), else: 0.0))
+          | fieldsAdd hasDataOutsideMw = if(mw[] == 0.0 and m1[] >= 0.0, 1.0, else: 0.0)
+          | fieldsAdd hasDataOutsideMw = arraySum(hasDataOutsideMw) > 0
+          | fieldsAdd availability = if(hasDataOutsideMw, round((arraySum(effectiveUptime) / arraySize(effectiveUptime)) * 100 / intervalToMinutes, decimals: 2))
+          | fields dt.smartscape.host, availability
+        ], sourceField: id, lookupField: dt.smartscape.host, fields: { availability }
+
+        | fields Name = name, id = toString(id), `Availability %` = availability
+        | filterOut isNull(`Availability %`)
+
+        | sort `Availability %` ASC
+        | limit toLong($TopLimit)
+      querySettings:
+        defaultSamplingRatio: 10
+        defaultScanLimitGbytes: 500
+        enableSampling: false
+        maxResultMegaBytes: 100
+        maxResultRecords: 1000
+      title: Top $TopLimit hosts by lowest availability
+      type: data
+      visualization: honeycomb
+      visualizationSettings:
+        coloring:
+          colorRules:
+            - colorMode: color-palette
+              colorPalette: red-green-inverted
+              comparator: = *value*
+              field: ""
+              type: string
+              value: ""
+        honeycomb:
+          labels:
+            showLabels: true
+          max:
+            mode: custom
+            value: 100
+          min:
+            mode: custom
+            value: 0
+          truncationMode: middle
+        unitsOverrides:
+          - added: 1.77073543306e+12
+            baseUnit: percent
+            cascade: null
+            decimals: 0
+            delimiter: false
+            displayUnit: null
+            identifier: Availability %
+            suffix: ""
+            unitCategory: percentage
+    "48":
+      davis:
+        davisVisualization:
+          isAvailable: true
+        enabled: false
+      query: "// Retrieve timeseries data for average CPU, memory, and disk usage percentages\n// across all hosts using Smartscape entities (aggregated, not per-host)\ntimeseries {\n  `CPU usage` = avg(dt.host.cpu.usage),\n  `Memory usage` = avg(dt.host.memory.usage),\n  `Disk usage` = avg(dt.host.disk.free)\n}, filter: dt.smartscape.host in [\n    smartscapeNodes HOST\n    | filter matchesValue($PrimaryTag,\"ALL\") \n        or arraySize(array($Values)) == 0 \n        or in($PrimaryTag:noquote, arrayConcat(array($Values), array(\"\")))\n    | filter matchesValue($HostsUnderMaintenance, \"Include\") or not(id in [ timeseries mw = sum(dt.host.maintenance, default: 0, filter: maintenance.is_under_maintenance), by: { dt.smartscape.host }, from: toTimestamp($dt_timeframe_from), to: toTimestamp($dt_timeframe_to) | filter arrayMax(mw) > 0 | fields dt.smartscape.host ])\n    | fields id\n  ],\n   union: true\n| fieldsAdd `Disk usage` = 100 - `Disk usage`[]\n\n"
+      querySettings:
+        defaultSamplingRatio: 10
+        defaultScanLimitGbytes: 500
+        enableSampling: false
+        maxResultMegaBytes: 100
+        maxResultRecords: 1000
+      title: 'Average resources usage '
+      type: data
+      visualization: lineChart
+      visualizationSettings:
+        chartSettings:
+          fieldMapping:
+            leftAxisValues:
+              - CPU usage
+              - Memory usage
+              - Disk usage
+            timestamp: timeframe
+          gapPolicy: connect
+          leftYAxisSettings:
+            label: CPU usage % • Memory available % • Disk used %
+            max:
+              mode: custom
+              value: 100
+          tooltip:
+            variant: shared
+          xAxisLabel: timeframe
+          xAxisScaling: analyzedTimeframe
+        dataMapping:
+          displayedFields:
+            - Memory usage
+            - Disk usage
+            - CPU usage
+    "49":
+      davis:
+        davisVisualization:
+          isAvailable: true
+        enabled: false
+      query: |-
+        smartscapeNodes HOST
+        | filter matchesValue($PrimaryTag,"ALL") or arraySize(array($Values)) == 0 or in($PrimaryTag:noquote, arrayConcat(array($Values), array("")))
+        | filter matchesValue($HostsUnderMaintenance, "Include") or not(id in [ timeseries mw = sum(dt.host.maintenance, default: 0, filter: maintenance.is_under_maintenance), by: { dt.smartscape.host }, from: toTimestamp($dt_timeframe_from), to: toTimestamp($dt_timeframe_to) | filter arrayMax(mw) > 0 | fields dt.smartscape.host ])
+        | filterOut isNull(hypervisor.type)
+        | fieldsAdd hypervisorType = replaceString(hypervisor.type, "HYPERVISOR_TYPE_", "")
+        | summarize count = count(), by: { hypervisorType }
+      querySettings:
+        defaultSamplingRatio: 10
+        defaultScanLimitGbytes: 500
+        enableSampling: false
+        maxResultMegaBytes: 100
+        maxResultRecords: 1000
+      title: Hosts hypervisor type
+      type: data
+      visualization: pieChart
+      visualizationSettings:
+        autoSelectVisualization: false
+        chartSettings:
+          categoricalBarChartSettings:
+            categoryAxis:
+              - count
+              - hypervisorType
+              - hypervisor.type
+            categoryAxisLabel: count,hypervisorType,hypervisor.type
+          circleChartSettings:
+            groupingThresholdType: relative
+            valueType: relative
+          truncationMode: middle
+        legend:
+          ratio: 58
+    "50":
+      davis:
+        davisVisualization:
+          isAvailable: true
+        enabled: false
+      description: ""
+      query: |-
+        // Count hosts by cloud provider, sort descending (Smartscape on Grail)
+        smartscapeNodes HOST
+        | filter matchesValue($PrimaryTag,"ALL") or arraySize(array($Values)) == 0 or in($PrimaryTag:noquote, arrayConcat(array($Values), array("")))
+        | filter matchesValue($HostsUnderMaintenance, "Include") or not(id in [ timeseries mw = sum(dt.host.maintenance, default: 0, filter: maintenance.is_under_maintenance), by: { dt.smartscape.host }, from: toTimestamp($dt_timeframe_from), to: toTimestamp($dt_timeframe_to) | filter arrayMax(mw) > 0 | fields dt.smartscape.host ])
+        | filterOut isNull(cloud.provider)
+        | fieldsAdd cloudType = cloud.provider
+        | summarize count = count(), by: { cloudType }
+        | sort count DESC
+      querySettings:
+        defaultSamplingRatio: 10
+        defaultScanLimitGbytes: 500
+        enableSampling: false
+        maxResultMegaBytes: 100
+        maxResultRecords: 1000
+      title: Hosts cloud types
+      type: data
+      visualization: pieChart
+      visualizationSettings:
+        autoSelectVisualization: false
+        chartSettings:
+          categoricalBarChartSettings:
+            categoryAxis:
+              - cloudType
+              - count
+          circleChartSettings:
+            groupingThresholdType: relative
+            valueType: relative
+          legend:
+            position: right
+          truncationMode: middle
+        coloring:
+          colorRules:
+            - colorMode: color-palette
+              colorPalette: categorical
+              comparator: = *value*
+              field: DT.name
+              type: string
+              value: ""
+            - colorMode: custom-color
+              comparator: =
+              customColor:
+                Default: 'var(--dt-colors-charts-categorical-color-01-default, #134fc9)'
+              field: DT.name
+              type: string
+              value: AWS • 1239
+            - colorMode: custom-color
+              comparator: =
+              customColor: '#b3007d'
+              field: DT.name
+              type: string
+              value: AZURE • 306
+            - colorMode: custom-color
+              comparator: =
+              customColor:
+                Default: 'var(--dt-colors-charts-categorical-color-15-default, #9033a3)'
+              field: DT.name
+              type: string
+              value: GOOGLE_CLOUD_PLATFORM • 301
+            - colorMode: custom-color
+              comparator: =
+              customColor:
+                Default: 'var(--dt-colors-charts-categorical-color-14-default, #d56b1a)'
+              field: DT.name
+              type: string
+              value: VMWARE
+            - colorMode: custom-color
+              comparator: =
+              customColor:
+                Default: 'var(--dt-colors-charts-categorical-color-05-default, #84859a)'
+              field: DT.name
+              type: string
+              value: UNKNOWN
+        legend:
+          ratio: 55
+    "51":
+      davis:
+        davisVisualization:
+          isAvailable: true
+        enabled: false
+      description: Click on a specific id field in the table below and select "Open with..." to view host details in the Infrastructure & Operations app.
+      query: |
+        // Identify the top 15 hosts with the highest CPU, memory, and disk usage
+        // using Smartscape HOST nodes as the entity source.
+        timeseries {
+          CPU = avg(dt.host.cpu.usage)
+        }, by: { dt.smartscape.host },
+           filter: { matchesValue($PrimaryTag,"ALL") or arraySize(array($Values)) == 0 or in($PrimaryTag:noquote, arrayConcat(array($Values), array(""))) }
+        | fieldsAdd CPU = arrayLast(CPU)
+        | filterOut isNull(CPU)
+        | sort CPU desc
+        | limit 5
+
+        | append [
+          timeseries {
+            Memory = avg(dt.host.memory.usage)
+          }, by: { dt.smartscape.host },
+             filter: { matchesValue($PrimaryTag,"ALL") or arraySize(array($Values)) == 0 or in($PrimaryTag:noquote, arrayConcat(array($Values), array(""))) }
+          | fieldsAdd Memory = arrayLast(Memory)
+          | filterOut isNull(Memory)
+          | sort Memory desc
+          | limit 5
+        ]
+
+        | append [
+          timeseries {
+            Disk = min(dt.host.disk.free)
+          }, by: { dt.smartscape.host },
+             filter: { matchesValue($PrimaryTag,"ALL") or arraySize(array($Values)) == 0 or in($PrimaryTag:noquote, arrayConcat(array($Values), array(""))) }
+          | fieldsAdd Disk = 100 - arrayLast(Disk)
+          | filterOut isNull(Disk)
+          | sort Disk desc
+          | limit 5
+        ]
+
+        | fields id = dt.smartscape.host
+        | filter isNotNull(id)
+        | dedup id
+
+        | fieldsAdd isUnderMaintenance = id in [ timeseries mw = sum(dt.host.maintenance, default: 0, filter: maintenance.is_under_maintenance), by: { dt.smartscape.host }, from: toTimestamp($dt_timeframe_from), to: toTimestamp($dt_timeframe_to) | filter arrayMax(mw) > 0 | fields dt.smartscape.host ]
+        | filter matchesValue($HostsUnderMaintenance, "Include") or not(isUnderMaintenance)
+        | fieldsAdd `Maintenance window` = if(isUnderMaintenance, "Active", else: "-")
+
+        // Enrich the selected top Smartscape HOST nodes with their latest
+        // CPU, memory, and disk usage metrics via a timeseries lookup.
+        | lookup [
+          timeseries {
+            CPU    = avg(dt.host.cpu.usage),
+            Memory = avg(dt.host.memory.usage),
+            Disk   = min(dt.host.disk.free)
+          }, by: { dt.smartscape.host }, union: true
+          | fields
+              CPU    = arrayLast(CPU),
+              Memory = arrayLast(Memory),
+              Disk   = 100 - arrayLast(Disk),
+              dt.smartscape.host
+        ],
+        sourceField: id,
+        lookupField: dt.smartscape.host,
+        fields: { CPU, Memory, Disk, dt.smartscape.host },
+        executionOrder: leftFirst
+
+        | fields Name = getNodeName(id),
+                 CPU, Memory, Disk, `Maintenance window`, id = toString(id)
+      querySettings:
+        defaultSamplingRatio: 10
+        defaultScanLimitGbytes: 500
+        enableSampling: false
+        maxResultMegaBytes: 100
+        maxResultRecords: 1000
+      title: Top 15 hosts by resource utilization (5 by CPU, 5 by memory, 5 by disk)
+      type: data
+      visualization: table
+      visualizationSettings:
+        table:
+          columnWidths:
+            '["CPU_warning"]': 134
+            '["Disk"]': 85
+            '["Disk_warning"]': 135
+            '["Mem_warning"]': 140
+            '["Memory"]': 94
+            '["avg_cpu"]': 109
+            '["avg_disk"]': 105
+            '["avg_mem"]': 112
+            '["entity.name"]': 315
+            '["host.entity.name"]': 222.00000000000003
+            '["host.id"]': 185
+          hiddenColumns:
+            - - dt.entity.host
+            - - id
+          hideColumnsForLargeResults: false
+          sortBy:
+            - columnId: '["Disk"]'
+              direction: ascending
+    "52":
+      davis:
+        davisVisualization:
+          isAvailable: true
+        enabled: false
+      query: "// Calculate the average CPU usage for each hypervisor type, rename fields for better readability, and sort the results in descending order of average CPU usage\nsmartscapeNodes HOST\n\n| filter matchesValue($PrimaryTag,\"ALL\") or arraySize(array($Values)) == 0 or in($PrimaryTag:noquote, arrayConcat(array($Values), array(\"\")))\n| filter matchesValue($HostsUnderMaintenance, \"Include\") or not(id in [ timeseries mw = sum(dt.host.maintenance, default: 0, filter: maintenance.is_under_maintenance), by: { dt.smartscape.host }, from: toTimestamp($dt_timeframe_from), to: toTimestamp($dt_timeframe_to) | filter arrayMax(mw) > 0 | fields dt.smartscape.host ])\n// exclude hosts without hypervisor type\n| filterOut isNull(hypervisor.type)\n| fieldsAdd hypervisorType = replaceString(hypervisor.type, \"HYPERVISOR_TYPE_\", \"\")\n\n// attach CPU consumption metric to hosts\n| lookup [\n  timeseries cpu=avg(dt.host.cpu.usage), by: { dt.smartscape.host }\n  | fieldsAdd lastCpu = arrayLast(cpu)\n], sourceField: id, lookupField: dt.smartscape.host, fields: { lastCpu }\n\n// summarize CPU usage per hypervisor type \n| summarize averageCpuPerType = avg(lastCpu), by: { hypervisorType }\n\n| sort averageCpuPerType desc\n| fieldsRename `Hypervisor type` = hypervisorType\n| fieldsRename `Average CPU %` = averageCpuPerType\n"
+      querySettings:
+        defaultSamplingRatio: 10
+        defaultScanLimitGbytes: 500
+        enableSampling: false
+        maxResultMegaBytes: 100
+        maxResultRecords: 1000
+      title: Average CPU for hypervisor types
+      type: data
+      visualization: table
+      visualizationSettings:
+        table:
+          columnWidths:
+            '["Hypervisor Type"]': 200
+        unitsOverrides:
+          - added: 1.77038487086e+12
+            baseUnit: percent
+            cascade: null
+            decimals: null
+            delimiter: false
+            displayUnit: null
+            identifier: Average CPU %
+            suffix: ""
+            unitCategory: percentage
+  variables:
+    - defaultValue: "5"
+      editable: true
+      input: "data \nrecord(limit = 1),\nrecord(limit = 5),\nrecord(limit = 10),\nrecord(limit = 50),\nrecord(limit = 100)"
+      key: TopLimit
+      multiple: false
+      type: query
+      version: 2
+      visible: true
+    - defaultValue: "500"
+      editable: true
+      key: ScanGBLimit
+      type: text
+      version: 2
+      visible: true
+    - defaultValue: Include
+      editable: true
+      input: data record(mode = "Include"), record(mode = "Exclude")
+      key: HostsUnderMaintenance
+      multiple: false
+      type: query
+      version: 2
+      visible: true
+    - editable: true
+      input: "data record (name=\"ALL\")\n| append [fieldsSnapshot smartscape.nodes\n| filter startsWith(field, \"primary_tags.\") \n| fields field\n]"
+      key: PrimaryTag
+      multiple: false
+      type: query
+      version: 2
+      visible: true
+    - editable: true
+      input: |-
+        smartscapeNodes HOST
+        | filter exists($PrimaryTag:noquote)
+        | summarize prominence = count(), by: {$PrimaryTag:noquote}
+        | sort prominence desc
+        | fields $PrimaryTag:noquote
+        | dedup $PrimaryTag:noquote
+        | limit 1000
+      key: Values
+      multiple: true
+      type: query
+      version: 2
+      visible: true
+  version: 21
+description: Get an overview of hosts and processes at the environment level.
+id: dynatrace.infraops.Infrastructure-Observability
+isPrivate: false
+modificationInfo:
+  createdTime: 2024-11-14T13:46:56.351Z
+  lastModifiedTime: 2026-08-18T09:09:04.656Z
+name: Infrastructure Observability Dashboard
+originAppId: dynatrace.infraops
+owner: 77dc1003-7e73-48b6-abf3-ffa1a94d6d9b
+type: dashboard
+version: 34
